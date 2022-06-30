@@ -2,7 +2,7 @@ from tkinter import*
 import spidev
 import smbus
 import time
-#import math
+import csv
 
 spi = spidev.SpiDev()
 spi.open(0,0)
@@ -14,22 +14,28 @@ address = 0x48
 
 def write(value,reg):
     bus.write_byte_data(address,reg,value)
-    
-LOCK = int('00000000',2)
-TIACN = int('00010000',2)
-REFCN = int('10110000',2)
-MODECN = int('00000011',2)
 
-write(LOCK,1)
-write(TIACN,16)
-write(REFCN,17)
-write(MODECN,18)
 
-DATA_cv = [0]*25
-            
-#TIAG = TIA_values["{}".format(variable_TIA.get())]
-TIAG=14000
 vref = 2.5
+
+TIA_dicc = {'Default':'00000000',
+            '2.75 KOhms':'00000100',
+            '3.5 KOhms':'00001000',
+            "7 KOhms":'00001100',
+            "14 KOhms":'00010000',
+            "35 KOhms":'00010100',
+            "120 KOhms":'00011000',
+            "350 KOhms":'00011100'}
+
+TIA_values = {'Default':0,
+            '2.75 KOhms':2750,
+            '3.5 KOhms':3500,
+            "7 KOhms":7000,
+            "14 KOhms":14000,
+            "35 KOhms":35000,
+            "120 KOhms":120000,
+            "350 KOhms":350000}
+
 volt_dicc={
            '-0.05':'10100010',
            '-0.10':'10100011',
@@ -51,6 +57,7 @@ volt_dicc={
            '0.55':'10111100',
            '0.60':'10111101'        
           }
+
 def decimal_range(start, stop, increment):
     while start <= stop:
         yield start
@@ -61,13 +68,13 @@ def decimal_range2(stop, start, decrement):
         yield stop
         stop -= decrement 
         
-def output(start:float,stop:float,sweep:float)->None:
+def output(start:float,stop:float,sweep:float,TIAG)->None:
     if((stop>start) and sweep<stop-start):
         k=0
-        
+        l=0
+
         for x in decimal_range(start,stop,sweep):
             REFCN = int(volt_dicc["{:0.2f}".format(x)],2)
-            #print(REFCN)
             bus.write_byte_data(address,17,REFCN)
             start_time = time.time()
             r = spi.readbytes(8)
@@ -88,8 +95,9 @@ def output(start:float,stop:float,sweep:float)->None:
             volts = (vmax*value)/(binmax)+vref
             current = ((volts-(vref/2))/(TIAG))*1000000
             print (" Step: %5.3f\n  Voltage: %5.3f V\m ; Current: %5.3f uA" %(start+k*sweep,volts,current))
-            DATA_cv[k] = aux[0]
+            DATA_cv[l] = aux[0]
             k=k+1
+            l=l+1
             
             time.sleep(1-(time.time() - start_time))
             print("--- %s seconds ---" % (time.time() - start_time))
@@ -97,7 +105,6 @@ def output(start:float,stop:float,sweep:float)->None:
         k=1
         for x in decimal_range2(stop-sweep,start,sweep):
             REFCN = int(volt_dicc["{:0.2f}".format(x)],2)
-            print(REFCN)
             bus.write_byte_data(address,17,REFCN)
             start_time = time.time()
             r = spi.readbytes(8)
@@ -118,9 +125,9 @@ def output(start:float,stop:float,sweep:float)->None:
             volts = (vmax*value)/(binmax)+vref
             current = ((volts-(vref/2))/(TIAG))*1000000
             print (" Step: %5.3f\n  Voltage: %5.3f V\m ; Current: %5.3f uA" %(stop-k*sweep,volts,current))
-            DATA_cv[k] = aux[0]
+            DATA_cv[l] = aux[0]
             k=k+1
-            
+            l=l+1
             time.sleep(1-(time.time() - start_time))
             print("--- %s seconds ---" % (time.time() - start_time))
     else:
@@ -162,7 +169,6 @@ w.insert('1.0','\n Welcome to Cyclic Voltammetry Client Interface.\n Please:\n 1
 
 
 def startCV():
-    
     w.delete("1.0","end")
     w.insert('1.0', ">> Transimpedance value selected: {}".format(variable_TIA.get())+'\n'+'\n')
     w.insert('1.0', ">> Operation mode selected: {}".format(variable_OPMODE.get())+'\n'+'\n')
@@ -170,13 +176,35 @@ def startCV():
     print (">> Transimpedance value selected: {}".format(variable_TIA.get())) 
     print (">> Operation mode selected: {}".format(variable_OPMODE.get()))
     print (">> Starting cyclic voltammetry...")
-    print(output(-0.2,0.6,0.05))
+    
+    TIA = TIA_dicc["{}".format(variable_TIA.get())]
+    TIAG = TIA_values["{}".format(variable_TIA.get())]
+    
+    LOCK = int('00000000',2)
+    TIACN = int(TIA,2)
+    REFCN = int('10110000',2)
+    MODECN = int('00000011',2)
+
+    write(LOCK,1)
+    write(TIACN,16)
+    write(REFCN,17)
+    write(MODECN,18)
+    print(output(-0.2,0.6,0.05,TIAG))
+    
+def exportCSV():
+    str = "cv"+".csv"
+    csv_out = open(str, 'wb')
+    mywriter = csv.writer(csv_out)
+    for row in zip(t_cv, DATA_cv):
+        mywriter.writerow(row)
+    csv_out.close()
+    w.insert('1.0', "Data exported to .csv succesfully!"+'\n'+'\n')
 
 menubar = Menu(root)
 menubar.add_command(label="Start",command=startCV)
 menubar.add_command(label="Clear")
 menubar.add_command(label="Save graph")
-menubar.add_command(label="Export .csv")
+menubar.add_command(label="Export .csv",command=exportCSV)
 menubar.add_command(label="Save data to DB")
 menubar.add_command(label="Close")
 
