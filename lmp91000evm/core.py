@@ -4,6 +4,8 @@ import spidev
 import smbus
 import time
 import numpy as np
+from settings import *
+from utilties import *
 
 spi = spidev.SpiDev()
 spi.open(0,0)
@@ -32,16 +34,17 @@ def decimal_range2(stop, start, decrement):
 
 register = {
     'BIAS': 17
-}
+    }
 
 def set_voltage(voltage: float) -> None:
-    REFCN = volt_dicc[voltage]
+    REFCN = int(volt_dicc[round(voltage,2)],2)
     write_to_register(REFCN, register['BIAS'])
 
-def sweep(start_volt:float, stop_volt:float, scan_rate:float, TIAG: int) -> Dict[float:float]:
+def sweep(start_volt:float, stop_volt:float, scan_rate:float, TIAG: int):
+#-> Dict[float:float]:
     readings = {}
     step = 0.05
-    wait_time = step/scan_rate
+    wait_time = abs(step/scan_rate)
     for voltage in np.arange(start_volt, stop_volt, scan_rate):
         # Start timer
         start_time = time.time()
@@ -52,7 +55,7 @@ def sweep(start_volt:float, stop_volt:float, scan_rate:float, TIAG: int) -> Dict
         readings[voltage] = current
 
         # Print output 
-        print (" Step: %5.3f\n  Voltage: %5.3f V\m ; Current: %5.3f uA" %(start+k*sweep,volts,current))
+        print (" Step: %5.3f\n  Voltage: %5.3f V\m ; Current: %5.3f uA" %(voltage,volts,current))
         # Stop timer
         time.sleep(wait_time-(time.time() - start_time))
         print("--- %s seconds ---" % (time.time() - start_time))
@@ -80,23 +83,26 @@ def read_current(TIAG):
     return aux,volts,current
 
 
-def cyclic_voltammetry(min, max, scan_rate):
-    if((stop>start) and sweep<stop-start):
-        k=0
-        l=0
+def cyclic_voltammetry(min, max, scan_rate,TIAG):
+    if((min<max) and scan_rate<max-min):
     # forward sweep
-    sweep(min, max, scan_rate)
+        sweep(min, max, scan_rate,TIAG)
     # backward sweep
-    sweep(max, min, scan_rate)
+        sweep(max, min-scan_rate, -scan_rate,TIAG)
 
-def startCV():
+def start_CV():
+    
+    #w = Text(root, width='60', height='12', bg='yellow', relief = 'groove')
+    #w.grid(column='1',row='9',columnspan='3',rowspan='1',pady=50,padx=20)
     w.delete("1.0","end")
+    
     w.insert('1.0', ">> Transimpedance value selected: {}".format(variable_TIA.get())+'\n'+'\n')
     w.insert('1.0', ">> Operation mode selected: {}".format(variable_OPMODE.get())+'\n'+'\n')
     w.insert('1.0', ">> Starting sweep..."+'\n'+'\n')
     print (">> Transimpedance value selected: {}".format(variable_TIA.get())) 
     print (">> Operation mode selected: {}".format(variable_OPMODE.get()))
     print (">> Starting cyclic voltammetry...")
+    
     
     TIA = TIA_dicc["{}".format(variable_TIA.get())]
     TIAG = TIA_values["{}".format(variable_TIA.get())]
@@ -106,14 +112,18 @@ def startCV():
     REFCN = int('10110000',2)
     MODECN = int('00000011',2)
 
-    write(LOCK,1)
-    write(TIACN,16)
-    write(REFCN,17)
-    write(MODECN,18)
-    print(output(-0.2,0.6,0.05,TIAG))
+    write_to_register(LOCK,1)
+    write_to_register(TIACN,16)
+    write_to_register(REFCN,17)
+    write_to_register(MODECN,18)
     
+    cyclic_voltammetry(-0.20,0.60,0.05,TIAG)
+
+#startCV()
+'''
 def main():
     pass
 
 if __name__ == "__main__":
     main()
+'''

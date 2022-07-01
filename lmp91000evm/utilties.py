@@ -1,4 +1,15 @@
 import csv
+from tkinter import *
+
+root = Tk()
+
+variable_TIA = StringVar(root)
+variable_TIA.set("Default")
+
+variable_OPMODE = StringVar(root)
+variable_OPMODE.set("Default")
+
+w = Text(root, width='60', height='12', bg='yellow', relief = 'groove')
 
 def exportCSV():
     str = "cv"+".csv"

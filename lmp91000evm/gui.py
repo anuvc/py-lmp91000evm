@@ -1,7 +1,8 @@
-from tkinter import *
-from .core import startCV, exportCSV
 
-root = Tk()
+#from .core import startCV, exportCSV
+from core import *
+from utilties import *
+
 root.wm_title("CVGIT")
 root.geometry('880x500+100+100')
 
@@ -14,9 +15,6 @@ TITLE.grid(column='1',row='1',columnspan='3',rowspan='1',pady=20)
 substance = Label(root, text='Substance: Pottasium ferrocyanide in KCl')
 substance.grid(column='1',row='3',columnspan='1',rowspan='1')
 
-variable_TIA = StringVar(root)
-variable_TIA.set("Default")
-
 TIA_label = Label(root,text='TIA gain')
 TIA_label.grid(column='3',row='2',columnspan='1',rowspan='1')
 
@@ -25,21 +23,16 @@ TIA = OptionMenu(root, variable_TIA, "Default", "2.75 KOhms",
                  "35 KOhms", "120 KOhms", "350 KOhms")
 TIA.grid(column='3',row='3',columnspan='1',rowspan='1')
 
-variable_OPMODE = StringVar(root)
-variable_OPMODE.set("Default")
-
-
-w = Text(root, width='60', height='12', bg='yellow', relief = 'groove')
 w.grid(column='1',row='9',columnspan='3',rowspan='1',pady=50,padx=20)
 w.insert('1.0','\n Welcome to Cyclic Voltammetry Client Interface.\n Please:\n 1) Insert the SPE in the adapters plug.\n 2) Choose your fit config\n    (TIA and OPMODE).\n 3) Click Start and save graph.\n'+'\n'+'\n'+'IISER Bhopal')
 
 
 
 menubar = Menu(root)
-menubar.add_command(label="Start",command=startCV)
+menubar.add_command(label="Start",command=start_CV)
 menubar.add_command(label="Clear")
 menubar.add_command(label="Save graph")
-menubar.add_command(label="Export .csv",command=exportCSV)
+menubar.add_command(label="Export .csv")
 menubar.add_command(label="Save data to DB")
 menubar.add_command(label="Close")
 
