@@ -25,7 +25,6 @@ def write_to_register(value, register):
     bus.write_byte_data(address, register, value)
 
 vref = 2.5
-readings = []
 
 register = {
     'BIAS': 17
