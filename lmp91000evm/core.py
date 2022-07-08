@@ -35,7 +35,7 @@ def set_voltage(voltage: float) -> None:
     #print(REFCN)
     write_to_register(REFCN, register['BIAS'])
 
-def sweep(start_volt:float, stop_volt:float, step:float, TIAG: int)-> None:
+def sweep(start_volt:float, stop_volt:float, step:float, TIAG: int,pos: int)-> None:
     wait_time = abs(step/float(scan_rate.get()))
     for voltage in np.arange(start_volt, stop_volt, step):
         # Start timer
@@ -44,10 +44,13 @@ def sweep(start_volt:float, stop_volt:float, step:float, TIAG: int)-> None:
         set_voltage(voltage)
         volts, current = read_current(TIAG)
         # Store reading
-        readings.append(current)
+        DATA_cv[pos]=current
+        pos+=1
 
         # Print output 
         print (" Step: %5.3f\n  Voltage: %5.3f V\m ; Current: %5.3f uA" %(voltage,volts,current))
+        
+        
         # Stop timer
         time.sleep(wait_time-(time.time() - start_time))
         print("--- %s seconds ---" % (time.time() - start_time))
@@ -78,16 +81,17 @@ def read_current(TIAG):
 def cyclic_voltammetry(min, max, step,TIAG):
     if((min<max) and step<max-min):
     # forward sweep
-        sweep(min, max, step,TIAG)
+        sweep(min, max, step,TIAG,0)
     # backward sweep
-        sweep(max, min-step, -step,TIAG)
-    print(readings)
+        sweep(max, min-step, -step,TIAG,16)
+    print(DATA_cv)
+            
     a.cla()
     a.grid(True)
     a.set_xlabel('v, V')
     a.set_ylabel('i, '+ u"\u00B5"+'A')
-    a.set_title('cyclic voltammetry')
-    a.plot(t_cv,readings,'blue')
+    a.set_title("cyclic voltammetry")
+    a.plot(t_cv,DATA_cv,'blue')
     dataPlot.draw()
 
 def start_CV():
@@ -95,7 +99,6 @@ def start_CV():
     #w = Text(root, width='60', height='12', bg='yellow', relief = 'groove')
     #w.grid(column='1',row='9',columnspan='3',rowspan='1',pady=50,padx=20)
     w.delete("1.0","end")
-    
     w.insert('1.0', ">> Transimpedance value selected: {}".format(variable_TIA.get())+'\n'+'\n')
     w.insert('1.0', ">> Operation mode selected: {}".format(variable_OPMODE.get())+'\n'+'\n')
     w.insert('1.0', ">> Starting sweep..."+'\n'+'\n')
@@ -109,7 +112,7 @@ def start_CV():
     
     LOCK = int('00000000',2)
     TIACN = int(TIA,2)
-    REFCN = int('10110000',2)
+    REFCN = int('10100101',2)
     MODECN = int('00000011',2)
 
     write_to_register(LOCK,1)

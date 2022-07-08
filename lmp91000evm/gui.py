@@ -21,18 +21,18 @@ TIA = OptionMenu(root, variable_TIA, "Default", "2.75 KOhms",
 TIA.grid(column='3',row='3',columnspan='1',rowspan='1')
 
 w.grid(column='1',row='9',columnspan='3',rowspan='1',pady=50,padx=20)
-w.insert('1.0','\n Welcome to Cyclic Voltammetry Client Interface.\n Please:\n 1) Insert the SPE in the adapters plug.\n 2) Choose your fit config\n    (TIA and OPMODE).\n 3) Click Start and save graph.\n'+'\n'+'\n'+'IISER Bhopal')
+w.insert('1.0','\n Welcome to Cyclic Voltammetry Client Interface.\n Please:\n 1) Connect the module to the cell \n 2) Choose your fit config.\n 3) Click Start and export .csv file.\n'+'\n'+'\n'+'IISER Bhopal')
 
 a.plot(t_cv,DATA_cv,'blue')
 a.grid(True)
+dataPlot.draw()
+dataPlot.get_tk_widget().grid(column='5',row='3', columnspan='2', rowspan='10')
 
 menubar = Menu(root)
 menubar.add_command(label="Start",command=start_CV)
-menubar.add_command(label="Clear")
-menubar.add_command(label="Save graph")
+menubar.add_command(label="Save graph",command=saveCV)
 menubar.add_command(label="Export .csv",command=exportCSV)
-menubar.add_command(label="Save data to DB")
-menubar.add_command(label="Close")
+menubar.add_command(label="Close",command=closeCV)
 
 root.config(menu=menubar)
 root.mainloop()
